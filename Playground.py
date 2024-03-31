@@ -1,8 +1,14 @@
 import streamlit as st
 import pandas as pd
 import random
+import json
+import os
+import time
+from components.nav_page import nav_page
 
-st.set_page_config(initial_sidebar_state="collapsed", page_title="Playground")
+st.set_page_config(initial_sidebar_state="collapsed")
+
+
 
 def generate_random_votes(num_voters, num_candidates):
     print("Generating random votes")
@@ -32,6 +38,40 @@ def reset_params():
     st.session_state.num_voters = 1
     st.session_state.group_size = 1
     st.session_state.pop("votes_df", None)
+    st.session_state.pop("results", None)
+
+def compute_results_callback():
+    print("computing results")
+    results = {
+        "winners":["Candidate 1"],
+        "time":"100ms",
+        "memory":"100MB"
+        
+    }
+    
+    st.session_state.results = results
+    #add to results.json if not exists create it
+    #add the results to the json file
+    results['n'] = st.session_state.num_voters
+    results['m'] = st.session_state.num_candidates
+    results['x'] = st.session_state.group_size
+    if os.path.exists("results.json"):
+        with open("results.json","r") as f:
+            data = json.load(f)
+        data.append(results)
+        with open("results.json","w") as f:
+            json.dump(data,f,indent=4)
+    else:   
+        with open("results.json","w") as f:
+            json.dump([results],f,indent=4)
+    st.toast("Results computed successfully . Check the results page for the output",icon="🎉")
+    #go to results page using javascript
+    nav_page("Results",timeout_secs=3)
+  
+
+
+
+
 
 st.title("Unanimous Voting Algorithm using Homomorphic Encryption")
 st.markdown("[![Contribute](https://img.shields.io/badge/Contribute-on%20GitHub-brightgreen)](Contribute)")
@@ -45,6 +85,7 @@ if 'num_candidates' not in st.session_state:
 if 'group_size' not in st.session_state:
     st.session_state.group_size = 1
 
+
 num_voters = st.number_input("Select the number of voters (n)", min_value=1, max_value=int(1e8), value=st.session_state.num_voters)
 st.session_state.num_voters = num_voters  # Assign input value to session_state variable
 num_candidates = st.number_input("Select the number of candidates (m)", min_value=1, max_value=int(1e2), value=st.session_state.num_candidates)
@@ -57,6 +98,7 @@ col1.button(label="Generate Random Votes", key="generate_random_votes", help="Ge
 col2.button(label="Reset Params", key="reset_params", help="Reset parameters", on_click=reset_params)
 
 placeholder = st.empty()
+link_placeholder = st.empty()
 if 'votes_df' in st.session_state:
     with placeholder.container():
         st.subheader("Votes")
@@ -67,6 +109,13 @@ if 'votes_df' in st.session_state:
                         >Table too large to display.Please download the data to view it
                         ''')
         col3, col4, col5 = st.columns(3)
-        col3.button(label="Compute Results", key="compute_results", help="Compute the results")
+        col3.button(label="Compute Results", key="compute_results", help="Compute the results",on_click=compute_results_callback)
         col4.download_button(label="Download Vote Data", key="download_results", help="Download the results", data=st.session_state.votes_df.to_csv(index=False), file_name="votes.csv")
         col5.empty()
+if "results" in st.session_state:
+    st.page_link(disabled= "results" not in st.session_state, label="View Results", page="./pages/Results.py",icon="📊")
+
+    
+
+    
+
