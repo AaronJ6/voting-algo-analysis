@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import os
+from components.nav_page import nav_page
 
 
 st.set_page_config(initial_sidebar_state="collapsed")
@@ -35,4 +36,5 @@ else:
     col2.metric("Memory", results["memory"])
     col3.empty()
 st.button("Clear Result History", on_click=clear_results_history)
+st.page_link(label="Go back to playground",page="Playground.py",icon="🔙")
     

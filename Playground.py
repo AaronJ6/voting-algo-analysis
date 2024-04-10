@@ -5,21 +5,38 @@ import json
 import os
 import time
 from components.nav_page import nav_page
+from components.confirm import confirm
 
 st.set_page_config(initial_sidebar_state="collapsed")
 
 
 
 def generate_random_votes(num_voters, num_candidates):
-    print("Generating random votes")
+    print("Generating random votes !!")
+    winners = []
+    # others = [] #! Removed others as it is unnecessary
+    for i in range(0,num_candidates):
+        ran=random.randint(0,1)
+        if(ran==1):
+            winners.append(i+1)
+        # else:
+        #     others.append(i+1)
+
+    print("winners :", winners)
     votes = []
     for i in range(num_voters):
         vote = []
         for j in range(num_candidates):
-            vote.append(random.choice(["yes","no"]))  # Randomly generate 0 or 1 as a vote
+            if j in winners:
+                vote.append(1)
+            else:
+                vote.append(random.choice([1,0]))  #! Randomly generate 0 for no and 1 for yes as a vote
         votes.append(vote)
+    print("Votes : ",votes)
+
     df = pd.DataFrame(votes, columns=[f"Candidate {i+1}" for i in range(num_candidates)])
     print(df)
+    print(winners)
     return df
 
 def generate_random_votes_callback():
@@ -66,7 +83,7 @@ def compute_results_callback():
             json.dump([results],f,indent=4)
     st.toast("Results computed successfully . Check the results page for the output",icon="🎉")
     #go to results page using javascript
-    nav_page("Results",timeout_secs=3)
+    nav_page("Results",timeout_secs=3,delay=3000)
   
 
 
