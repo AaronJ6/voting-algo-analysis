@@ -133,11 +133,12 @@ def compute_results_callback():
     # mem_usage_after = memory_usage(-1, interval=0.1, timeout=1)
     end_time = time.time()
     # print(final_winners)
+    print(final_winners)
 
     results = {
         "winners":final_winners,
-        "time":end_time - start_time,
-        # "memory":mem_usage_after - mem_usage_before        
+        "time":f"{(end_time-start_time)*1000:.1f} ms",
+        "memory":0      
     } 
     st.session_state.results = results
 
@@ -175,7 +176,7 @@ num_voters = st.number_input("Select the number of voters (n)", min_value=1, max
 st.session_state.num_voters = num_voters  # Assign input value to session_state variable
 num_candidates = st.number_input("Select the number of candidates (m)", min_value=1, max_value=int(1e2), value=st.session_state.num_candidates)
 st.session_state.num_candidates = num_candidates  # Assign input value to session_state variable
-group_size = st.number_input("Select the group size (x)", min_value=1, max_value=int(1e8), value=st.session_state.group_size)
+group_size = st.number_input("Select the group size (x)", min_value=2, max_value=int(1e8), value=st.session_state.group_size)
 st.session_state.group_size = group_size  # Assign input value to session_state variable
 
 col1, col2, col3 = st.columns(3)
