@@ -5,14 +5,17 @@ import json
 import os
 import time
 from components.nav_page import nav_page
-from components.confirm import confirm
+from lightphe import LightPHE
+# from memory_profiler import memory_usage
+
 
 st.set_page_config(initial_sidebar_state="collapsed")
 
 
 
 def generate_random_votes(num_voters, num_candidates):
-    print("Generating random votes !!")
+    print("Generating random votes")
+    # Here we are deciding the winners randomly with a prob of 0.5
     winners = []
     # others = [] #! Removed others as it is unnecessary
     for i in range(0,num_candidates):
@@ -32,11 +35,9 @@ def generate_random_votes(num_voters, num_candidates):
             else:
                 vote.append(random.choice([1,0]))  #! Randomly generate 0 for no and 1 for yes as a vote
         votes.append(vote)
-    print("Votes : ",votes)
 
     df = pd.DataFrame(votes, columns=[f"Candidate {i+1}" for i in range(num_candidates)])
     print(df)
-    print(winners)
     return df
 
 def generate_random_votes_callback():
@@ -59,19 +60,87 @@ def reset_params():
 
 def compute_results_callback():
     print("computing results")
-    results = {
-        "winners":["Candidate 1"],
-        "time":"100ms",
-        "memory":"100MB"
-        
-    }
-    
-    st.session_state.results = results
+    results = {}
+
+    start_time = time.time()
+    # Get memory usage before the code section
+    # mem_usage_before = memory_usage(-1, interval=0.1, timeout=1)
+
     #add to results.json if not exists create it
     #add the results to the json file
     results['n'] = st.session_state.num_voters
     results['m'] = st.session_state.num_candidates
     results['x'] = st.session_state.group_size
+
+    algo="Paillier"
+    cs = LightPHE(algorithm_name = algo)
+    bitdiff = int(results['x'].bit_length())
+    votes = st.session_state.votes_df.values.tolist()
+    enc_votes = []
+    for j in range(len(votes)):
+        curval=0
+        if votes[j]==1:
+            curval = curval | (1<<(j*bitdiff)) #! the j-1 is removed because j is zero-index here unlike space_opt.py
+
+        encrypted = cs.encrypt(curval)
+        enc_votes.append(encrypted)
+
+    # Unity element in this scenario is when one votes for all the candidates
+    unity_elem = 0
+    for i in range(0, results['m']):
+        unity_elem = unity_elem | (1<<(i*bitdiff))
+    unity_elem = cs.encrypt(unity_elem)
+
+    # Here we are taking the sum of all the votes but within the constraints of group size and then decrypting it to get the result
+    while(len(enc_votes)>1):
+        last=0
+        while(len(enc_votes)%results['x']!=0):
+            enc_votes.append(unity_elem)
+        group_votes = []
+        while(last<len(enc_votes)):
+            sumvote = cs.encrypt(0)
+            for i in range(last,min(last+results['x'],len(enc_votes))):
+                sumvote = sumvote + enc_votes[i]
+
+            # Now this group vote is sent to the central server to decrypt and reencrypt
+            # Computation in the central server
+                
+            decrypted_vote = cs.decrypt(sumvote)
+            updated_vote = 0
+
+            for i in range(0,results['m']):
+                val=0
+                for j in range(0,bitdiff):
+                    if decrypted_vote & (1<<(i*bitdiff+j)):
+                        val += (1<<j)
+                if val==results['x']:
+                    updated_vote = updated_vote | (1<<(i*bitdiff))
+            
+            updated_vote = cs.encrypt(updated_vote)
+            
+            group_votes.append(updated_vote)
+            last += results['x']
+
+        enc_votes = group_votes
+    # This will be the final result after the computation
+    decrypted_vote = cs.decrypt(enc_votes[0])
+
+    final_winners = []
+    for i in range(0,results['m']):
+        if decrypted_vote & (1<<(i*bitdiff)):
+            final_winners.append(i+1)
+    
+    # mem_usage_after = memory_usage(-1, interval=0.1, timeout=1)
+    end_time = time.time()
+    # print(final_winners)
+
+    results = {
+        "winners":final_winners,
+        "time":end_time - start_time,
+        # "memory":mem_usage_after - mem_usage_before        
+    } 
+    st.session_state.results = results
+
     if os.path.exists("results.json"):
         with open("results.json","r") as f:
             data = json.load(f)
@@ -83,8 +152,7 @@ def compute_results_callback():
             json.dump([results],f,indent=4)
     st.toast("Results computed successfully . Check the results page for the output",icon="🎉")
     #go to results page using javascript
-    nav_page("Results",timeout_secs=3,delay=3000)
-  
+    nav_page("Results",timeout_secs=3)
 
 
 
@@ -131,8 +199,3 @@ if 'votes_df' in st.session_state:
         col5.empty()
 if "results" in st.session_state:
     st.page_link(disabled= "results" not in st.session_state, label="View Results", page="./pages/Results.py",icon="📊")
-
-    
-
-    
-
