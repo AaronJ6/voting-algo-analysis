@@ -137,7 +137,7 @@ def compute_results_callback():
     results = {
         "winners":final_winners,
         "time":f"{(end_time-start_time)*1000:.1f} ms",
-        "memory":f"{mem_usage_after[0]-mem_usage_before[0]:.8f} MB"      
+        "memory":f"{(mem_usage_after[0]-mem_usage_before[0])*1000:.4f} KB"      
     } 
     st.session_state.results = results
 
