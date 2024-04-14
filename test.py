@@ -168,7 +168,7 @@ if 'num_voters' not in st.session_state:
 if 'num_candidates' not in st.session_state:
     st.session_state.num_candidates = 1
 if 'group_size' not in st.session_state:
-    st.session_state.group_size = 1
+    st.session_state.group_size = 2
 
 
 num_voters = st.number_input("Select the number of voters (n)", min_value=1, max_value=int(1e8), value=st.session_state.num_voters)
