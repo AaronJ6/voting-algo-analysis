@@ -6,7 +6,7 @@ import os
 import time
 from components.nav_page import nav_page
 from lightphe import LightPHE
-# from memory_profiler import memory_usage
+from memory_profiler import memory_usage
 
 
 st.set_page_config(initial_sidebar_state="collapsed")
@@ -21,15 +21,15 @@ def generate_random_votes(num_voters, num_candidates):
     for i in range(0,num_candidates):
         ran=random.randint(0,1)
         if(ran==1):
-            winners.append(i+1)
+            winners.append(i)
         # else:
-        #     others.append(i+1)
+        #     others.append(i)
 
-    print("winners :", winners)
+    print("winners(in zero index) :", winners)
     votes = []
-    for i in range(num_voters):
+    for i in range(0, num_voters):
         vote = []
-        for j in range(num_candidates):
+        for j in range(0, num_candidates):
             if j in winners:
                 vote.append(1)
             else:
@@ -48,13 +48,13 @@ def generate_random_params():
     print("Generating random params")
     st.session_state.num_candidates = random.randint(1, 100)
     st.session_state.num_voters = random.randint(1, int(1e8))
-    st.session_state.group_size = random.randint(1, st.session_state.num_voters)
+    st.session_state.group_size = random.randint(2, st.session_state.num_voters)
     st.session_state.pop("votes_df", None)
 
 def reset_params():
     st.session_state.num_candidates = 1
     st.session_state.num_voters = 1
-    st.session_state.group_size = 1
+    st.session_state.group_size = 2
     st.session_state.pop("votes_df", None)
     st.session_state.pop("results", None)
 
@@ -63,8 +63,8 @@ def compute_results_callback():
     results = {}
 
     start_time = time.time()
-    # Get memory usage before the code section
-    # mem_usage_before = memory_usage(-1, interval=0.1, timeout=1)
+    # memory usage before the code section
+    mem_usage_before = memory_usage(-1, interval=0.1, timeout=1)
 
     #add to results.json if not exists create it
     #add the results to the json file
@@ -77,11 +77,11 @@ def compute_results_callback():
     bitdiff = int(results['x'].bit_length())
     votes = st.session_state.votes_df.values.tolist()
     enc_votes = []
-    for j in range(len(votes)):
+    for i in range(0,results['n']):
         curval=0
-        if votes[j]==1:
-            curval = curval | (1<<(j*bitdiff)) #! the j-1 is removed because j is zero-index here unlike space_opt.py
-
+        for j in range(0,results['m']):
+            if votes[i][j]==1:
+                curval = curval | (1<<(j*bitdiff)) #! the j-1 is removed because j is zero-index here unlike space_opt.py
         encrypted = cs.encrypt(curval)
         enc_votes.append(encrypted)
 
@@ -129,16 +129,15 @@ def compute_results_callback():
     for i in range(0,results['m']):
         if decrypted_vote & (1<<(i*bitdiff)):
             final_winners.append(i+1)
-    
-    # mem_usage_after = memory_usage(-1, interval=0.1, timeout=1)
     end_time = time.time()
+    # memory usage after the main code section
+    mem_usage_after = memory_usage(-1, interval=0.1, timeout=1)
     # print(final_winners)
-    print(final_winners)
 
     results = {
         "winners":final_winners,
         "time":f"{(end_time-start_time)*1000:.1f} ms",
-        "memory":0      
+        "memory":f"{mem_usage_after[0]-mem_usage_before[0]:.8f} MB"      
     } 
     st.session_state.results = results
 
