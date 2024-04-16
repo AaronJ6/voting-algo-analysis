@@ -17,25 +17,31 @@ def generate_random_votes(num_voters, num_candidates):
     print("Generating random votes")
     # Here we are deciding the winners randomly with a prob of 0.5
     winners = []
-    # others = [] #! Removed others as it is unnecessary
+    allvote=[]
+    others = [] #! Removed others as it is unnecessary
     for i in range(0,num_candidates):
         ran=random.randint(0,1)
         if(ran==1):
             winners.append(i)
-        # else:
-        #     others.append(i)
+            allvote.append(1)
+        else:
+            allvote.append(0)
+            others.append(i)
 
     print("winners(in zero index) :", winners)
     votes = []
     for i in range(0, num_voters):
-        vote = []
-        for j in range(0, num_candidates):
-            if j in winners:
-                vote.append(1)
-            else:
-                vote.append(random.choice([1,0]))  #! Randomly generate 0 for no and 1 for yes as a vote
+        vote = list(allvote)
+        # for j in range(0, num_candidates):
+        #     if j in winners:
+        #         vote.append(1)
+        #     else:
+        #         vote.append(random.choice([1,0]))  #! Randomly generate 0 for no and 1 for yes as a vote
+        for j in others:
+            if random.choice([1,0])==1:
+                vote[j]=1
         votes.append(vote)
-
+    
     df = pd.DataFrame(votes, columns=[f"Candidate {i+1}" for i in range(num_candidates)])
     print(df)
     return df
@@ -76,12 +82,14 @@ def compute_results_callback():
     cs = LightPHE(algorithm_name = algo)
     bitdiff = int(results['x'].bit_length())
     votes = st.session_state.votes_df.values.tolist()
-    enc_votes = []
+    bitmask_rep = [] #It contains the bitmask representation of each vote
+    enc_votes = [] #It contains the encrypted votes
     for i in range(0,results['n']):
         curval=0
         for j in range(0,results['m']):
             if votes[i][j]==1:
                 curval = curval | (1<<(j*bitdiff)) #! the j-1 is removed because j is zero-index here unlike space_opt.py
+        bitmask_rep.append(curval)
         encrypted = cs.encrypt(curval)
         enc_votes.append(encrypted)
 
@@ -137,7 +145,8 @@ def compute_results_callback():
     results = {
         "winners":final_winners,
         "time":f"{(end_time-start_time)*1000:.1f} ms",
-        "memory":f"{(mem_usage_after[0]-mem_usage_before[0])*1000:.4f} KB"      
+        "memory":f"{(mem_usage_after[0]-mem_usage_before[0])*1000:.4f} KB",
+        "bitmask_rep":bitmask_rep
     } 
     st.session_state.results = results
 

@@ -29,6 +29,13 @@ else:
     st.subheader("Winners")
     df = pd.DataFrame(results["winners"],columns=["Candidate"])
     st.table(df)
+    st.subheader("BitMasks")
+    if len(results["bitmask_rep"])<100:
+        df = pd.DataFrame(results["bitmask_rep"],columns=["Candidate"])
+    else:
+        st.warning("Bitmask representation is too large to display. Download the csv file to view the complete representation")
+    st.button("Download BitMasks", on_click=st.download_button, args=(df.to_csv(index=False), "bitmasks.csv", "Download BitMasks"), help="Download the bitmasks as a csv file")
+    st.table(df)
     st.subheader("Performance")
     
     col1, col2, col3 = st.columns(3)
