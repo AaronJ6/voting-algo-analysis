@@ -7,6 +7,8 @@ import time
 from components.nav_page import nav_page
 from lightphe import LightPHE
 from memory_profiler import memory_usage
+from collections import deque
+import sys
 
 
 st.set_page_config(initial_sidebar_state="collapsed")
@@ -65,6 +67,7 @@ def reset_params():
     st.session_state.pop("results", None)
 
 def compute_results_callback():
+    memory_enc_votes = 0
     print("computing results")
     results = {}
 
@@ -83,40 +86,72 @@ def compute_results_callback():
     bitdiff = int(results['x'].bit_length())
     votes = st.session_state.votes_df.values.tolist()
     bitmask_rep = [] #It contains the bitmask representation of each vote
-    enc_votes = [] #It contains the encrypted votes
+    # enc_votes = [] #It contains the encrypted votes
+    enc_votes = deque()
+    total_ops = 0 #Total operations performed in the computation
     for i in range(0,results['n']):
         curval=0
         for j in range(0,results['m']):
             if votes[i][j]==1:
                 curval = curval | (1<<(j*bitdiff)) #! the j-1 is removed because j is zero-index here unlike space_opt.py
-        bitmask_rep.append(curval)
+        bitmask_rep.append(f"{curval:0{bitdiff*num_candidates}b}")
         encrypted = cs.encrypt(curval)
+        memory_enc_votes += sys.getsizeof(encrypted)
         enc_votes.append(encrypted)
 
     # Unity element in this scenario is when one votes for all the candidates
     unity_elem = 0
+   
     for i in range(0, results['m']):
         unity_elem = unity_elem | (1<<(i*bitdiff))
     unity_elem = cs.encrypt(unity_elem)
+    memory_enc_votes += sys.getsizeof(unity_elem)
+    
 
     # Here we are taking the sum of all the votes but within the constraints of group size and then decrypting it to get the result
     while(len(enc_votes)>1):
         last=0
-        while(len(enc_votes)%results['x']!=0):
+        total_ops += 1
+        # while(len(enc_votes)%results['x']!=0):
+        #     enc_votes.append(unity_elem)
+        while len(enc_votes)<results['x']:
             enc_votes.append(unity_elem)
-        group_votes = []
-        while(last<len(enc_votes)):
-            sumvote = cs.encrypt(0)
-            for i in range(last,min(last+results['x'],len(enc_votes))):
-                sumvote = sumvote + enc_votes[i]
+        
+        # group_votes = []
+        # while(last<len(enc_votes)):
+        #     sumvote = cs.encrypt(0)
+        #     for i in range(last,min(last+results['x'],len(enc_votes))):
+        #         sumvote = sumvote + enc_votes[i]
 
-            # Now this group vote is sent to the central server to decrypt and reencrypt
-            # Computation in the central server
+        #     # Now this group vote is sent to the central server to decrypt and reencrypt
+        #     # Computation in the central server
                 
-            decrypted_vote = cs.decrypt(sumvote)
-            updated_vote = 0
+        #     decrypted_vote = cs.decrypt(sumvote)
+        #     updated_vote = 0
 
-            for i in range(0,results['m']):
+        #     for i in range(0,results['m']):
+        #         val=0
+        #         for j in range(0,bitdiff):
+        #             if decrypted_vote & (1<<(i*bitdiff+j)):
+        #                 val += (1<<j)
+        #         if val==results['x']:
+        #             updated_vote = updated_vote | (1<<(i*bitdiff))
+            
+        #     updated_vote = cs.encrypt(updated_vote)
+            
+        #     group_votes.append(updated_vote)
+        #     last += results['x']
+
+        # enc_votes = group_votes
+        sumvote = cs.encrypt(0)
+        memory_enc_votes += sys.getsizeof(sumvote)
+        for i in range(0, results['x']):
+            sumvote = sumvote + enc_votes.popleft()
+
+        decrypted_vote = cs.decrypt(sumvote)
+        updated_vote = 0
+
+        for i in range(0,results['m']):
                 val=0
                 for j in range(0,bitdiff):
                     if decrypted_vote & (1<<(i*bitdiff+j)):
@@ -124,14 +159,14 @@ def compute_results_callback():
                 if val==results['x']:
                     updated_vote = updated_vote | (1<<(i*bitdiff))
             
-            updated_vote = cs.encrypt(updated_vote)
-            
-            group_votes.append(updated_vote)
-            last += results['x']
+        updated_vote = cs.encrypt(updated_vote)
+        memory_enc_votes += sys.getsizeof(updated_vote)
 
-        enc_votes = group_votes
+        enc_votes.append(updated_vote)
+
+
     # This will be the final result after the computation
-    decrypted_vote = cs.decrypt(enc_votes[0])
+    decrypted_vote = cs.decrypt(enc_votes.popleft())
 
     final_winners = []
     for i in range(0,results['m']):
@@ -141,12 +176,15 @@ def compute_results_callback():
     # memory usage after the main code section
     mem_usage_after = memory_usage(-1, interval=0.1, timeout=1)
     # print(final_winners)
+    
+    
 
     results = {
         "winners":final_winners,
         "time":f"{(end_time-start_time)*1000:.1f} ms",
-        "memory":f"{(mem_usage_after[0]-mem_usage_before[0])*1000:.4f} KB",
-        "bitmask_rep":bitmask_rep
+        "memory":f"{memory_enc_votes/1024} KB",
+        "bitmask_rep":bitmask_rep,
+        "total_ops":total_ops
     } 
     st.session_state.results = results
 
