@@ -67,6 +67,13 @@ def reset_params():
     st.session_state.pop("results", None)
 
 def compute_results_callback():
+    if len(st.session_state.votes_df)!=st.session_state.num_voters:
+        st.error("Please generate the votes first")
+        return
+    #check column number is equal to num_candidates
+    if len(st.session_state.votes_df.columns)!=st.session_state.num_candidates:
+        st.error("Please generate the votes first")
+        return
     memory_enc_votes = 0
     print("computing results")
     results = {}
@@ -182,16 +189,22 @@ def compute_results_callback():
     results = {
         "winners":final_winners,
         "time":f"{(end_time-start_time)*1000:.1f} ms",
-        "memory":f"{memory_enc_votes/1024} KB",
+        "memory":f"{(memory_enc_votes/1024):1f} KB",
         "bitmask_rep":bitmask_rep,
-        "total_ops":total_ops
+        "total_ops":total_ops,
+        "num_voters":results['n'],
+        "num_candidates":results['m'],
+        "group_size":results['x']
+        
     } 
     st.session_state.results = results
 
     if os.path.exists("results.json"):
         with open("results.json","r") as f:
             data = json.load(f)
-        data.append(results)
+            if results not in data:
+                data.append(results)
+    
         with open("results.json","w") as f:
             json.dump(data,f,indent=4)
     else:   
