@@ -32,6 +32,9 @@ else:
     # df1 = df1.style.format({"Bitmask representation": "{:.0f}"})
     # df1["Bitmask representation"] = df1["Bitmask representation"].apply(lambda x: f"{int(x):.0f}")
     st.subheader("BitMasks")
+
+    # bitmask_len=len(str(results["bitmask_rep"][0]))
+
     if len(results["bitmask_rep"])<100:
         # df = pd.DataFrame(results["bitmask_rep"],columns=["Bitmask representation"])
         st.table(df1)
@@ -65,7 +68,9 @@ else:
             "Group_Size":elem["group_size"],
             "Time":float(elem["time"][:-3]),
             "Memory":float(elem["memory"][:-3]),
-            "Total_Operations":elem["total_ops"]
+            "Total_Operations":elem["total_ops"],
+            "bitmask_len":elem["bitmask_len"]
+
         })
     st.subheader("Variation with No_of_Voters")
        #elements all values where  m,x is the same as the current results
@@ -87,6 +92,8 @@ else:
         st.line_chart(df[["No_of_Candidates","Time"]].set_index("No_of_Candidates"), y="Time")
         st.line_chart(df[["No_of_Candidates","Memory"]].set_index("No_of_Candidates"), y="Memory")
         st.line_chart(df[["No_of_Candidates","Total_Operations"]].set_index("No_of_Candidates"), y="Total_Operations")
+        st.line_chart(df[["No_of_Candidates","bitmask_len"]].set_index("No_of_Candidates"), y="bitmask_len")
+
     else:
         st.warning("Not enough data to plot graphs for variation with m ,vary m for the same n and x you entered now to see the graphs")
 
@@ -98,6 +105,7 @@ else:
         st.line_chart(df[["Group_Size","Time"]].set_index("Group_Size"), y="Time")
         st.line_chart(df[["Group_Size","Memory"]].set_index("Group_Size"), y="Memory")
         st.line_chart(df[["Group_Size","Total_Operations"]].set_index("Group_Size"), y="Total_Operations")
+        st.line_chart(df[["Group_Size","bitmask_len"]].set_index("Group_Size"), y="bitmask_len")
     else:
         st.warning("Not enough data to plot graphs for variation with x ,vary x for the same n and m you entered now to see the graphs")
 

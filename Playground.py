@@ -45,7 +45,7 @@ def generate_random_votes(num_voters, num_candidates):
         votes.append(vote)
     
     df = pd.DataFrame(votes, columns=[f"Candidate {i+1}" for i in range(num_candidates)])
-    print(df)
+    # print(df)
     return df
 
 def generate_random_votes_callback():
@@ -96,6 +96,7 @@ def compute_results_callback():
     # enc_votes = [] #It contains the encrypted votes
     enc_votes = deque()
     total_ops = 0 #Total operations performed in the computation
+
     for i in range(0,results['n']):
         curval=0
         for j in range(0,results['m']):
@@ -112,7 +113,7 @@ def compute_results_callback():
     for i in range(0, results['m']):
         unity_elem = unity_elem | (1<<(i*bitdiff))
     unity_elem = cs.encrypt(unity_elem)
-    memory_enc_votes += sys.getsizeof(unity_elem)
+    # memory_enc_votes += sys.getsizeof(unity_elem)
     
 
     # Here we are taking the sum of all the votes but within the constraints of group size and then decrypting it to get the result
@@ -151,7 +152,7 @@ def compute_results_callback():
 
         # enc_votes = group_votes
         sumvote = cs.encrypt(0)
-        memory_enc_votes += sys.getsizeof(sumvote)
+        # memory_enc_votes += sys.getsizeof(sumvote)
         for i in range(0, results['x']):
             sumvote = sumvote + enc_votes.popleft()
 
@@ -194,8 +195,8 @@ def compute_results_callback():
         "total_ops":total_ops,
         "num_voters":results['n'],
         "num_candidates":results['m'],
-        "group_size":results['x']
-        
+        "group_size":results['x'],
+        "bitmask_len":len(bitmask_rep[0])
     } 
     st.session_state.results = results
 
