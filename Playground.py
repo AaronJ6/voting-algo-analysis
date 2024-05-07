@@ -234,7 +234,7 @@ if 'group_size' not in st.session_state:
 
 num_voters = st.number_input("Select the number of voters (n)", min_value=1, max_value=int(1e8), value=st.session_state.num_voters)
 st.session_state.num_voters = num_voters  # Assign input value to session_state variable
-num_candidates = st.number_input("Select the number of candidates (m)", min_value=1, max_value=int(1e2), value=st.session_state.num_candidates)
+num_candidates = st.number_input("Select the number of candidates (m)", min_value=1, max_value=int(5e2), value=st.session_state.num_candidates)
 st.session_state.num_candidates = num_candidates  # Assign input value to session_state variable
 group_size = st.number_input("Select the group size (x)", min_value=2, max_value=int(1e8), value=st.session_state.group_size)
 st.session_state.group_size = group_size  # Assign input value to session_state variable

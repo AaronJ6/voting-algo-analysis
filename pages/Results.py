@@ -80,6 +80,7 @@ else:
         st.line_chart(data = df[["No_of_Voters","Time"]].set_index("No_of_Voters"),y="Time")
         st.line_chart(data = df[["No_of_Voters","Memory"]].set_index("No_of_Voters"),y="Memory")
         st.line_chart(data = df[["No_of_Voters","Total_Operations"]].set_index("No_of_Voters"),y="Total_Operations")
+        st.line_chart(data = df[["No_of_Voters","bitmask_len"]].set_index("No_of_Voters"),y="bitmask_len")
     else:
         st.warning("Not enough data to plot graphs for variation with n ,vary n for the same m and x you entered now to see the graphs")
 
